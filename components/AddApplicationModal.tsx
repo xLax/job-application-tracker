@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import {
   Dialog,
@@ -16,8 +17,11 @@ import {
   InputLabel,
   Select,
   FormHelperText,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
-import type { ApplicationFormData } from '@/types/application';
+import DeleteIcon from '@mui/icons-material/Delete';
+import type { ApplicationFormData, Application } from '@/types/application';
 import { APPLICATION_STATUSES, EMPLOYMENT_TYPES, WORK_MODES } from '@/lib/constants';
 
 export type { ApplicationFormData };
@@ -26,10 +30,12 @@ interface Props {
   open: boolean;
   onClose: () => void;
   onSubmit: (data: ApplicationFormData) => Promise<void>;
+  onDelete?: (id: string) => Promise<void>;
   serverError?: string;
+  application?: Application | null;
 }
 
-export default function AddApplicationModal({ open, onClose, onSubmit, serverError }: Props) {
+export default function AddApplicationModal({ open, onClose, onSubmit, onDelete, serverError, application }: Props) {
   const {
     register,
     handleSubmit,
@@ -49,6 +55,36 @@ export default function AddApplicationModal({ open, onClose, onSubmit, serverErr
     },
   });
 
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Prefill the form when opening in edit mode, clear it when opening in add mode
+  useEffect(() => {
+    if (!open) return;
+    if (application) {
+      reset({
+        company: application.company,
+        position: application.position,
+        location: application.location,
+        status: application.status,
+        dateApplied: new Date(application.dateApplied).toISOString().split('T')[0],
+        employmentType: application.employmentType,
+        workMode: application.workMode,
+        notes: application.notes || '',
+      });
+    } else {
+      reset({
+        company: '',
+        position: '',
+        location: '',
+        status: 'Applied',
+        dateApplied: new Date().toISOString().split('T')[0],
+        employmentType: 'Full Time',
+        workMode: 'Not Specified',
+        notes: '',
+      });
+    }
+  }, [open]);
+
   const handleClose = () => {
     reset();
     onClose();
@@ -58,14 +94,26 @@ export default function AddApplicationModal({ open, onClose, onSubmit, serverErr
     try {
       await onSubmit(data);
       reset();
-    } catch (err: any) {
+    } catch (err: unknown) {
       // error is surfaced via serverError prop from parent
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!application || !onDelete) return;
+    setIsDeleting(true);
+    try {
+      await onDelete(application._id);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ fontWeight: 'bold' }}>Add Application</DialogTitle>
+      <DialogTitle sx={{ fontWeight: 'bold' }}>
+        {application ? 'Edit Application' : 'Add Application'}
+      </DialogTitle>
 
       <form onSubmit={handleSubmit(handleFormSubmit)}>
         <DialogContent dividers>
@@ -209,11 +257,23 @@ export default function AddApplicationModal({ open, onClose, onSubmit, serverErr
         </DialogContent>
 
         <DialogActions sx={{ px: 3, py: 2 }}>
-          <Button onClick={handleClose} disabled={isSubmitting}>
+          {application && onDelete && (
+            <Tooltip title="Delete application">
+              <IconButton
+                onClick={handleDelete}
+                disabled={isSubmitting || isDeleting}
+                color="error"
+                sx={{ mr: 'auto' }}
+              >
+                {isDeleting ? <CircularProgress size={22} color="error" /> : <DeleteIcon />}
+              </IconButton>
+            </Tooltip>
+          )}
+          <Button onClick={handleClose} disabled={isSubmitting || isDeleting}>
             Cancel
           </Button>
-          <Button type="submit" variant="contained" disabled={isSubmitting}>
-            {isSubmitting ? <CircularProgress size={22} /> : 'Add Application'}
+          <Button type="submit" variant="contained" disabled={isSubmitting || isDeleting}>
+            {isSubmitting ? <CircularProgress size={22} /> : application ? 'Save Changes' : 'Add Application'}
           </Button>
         </DialogActions>
       </form>

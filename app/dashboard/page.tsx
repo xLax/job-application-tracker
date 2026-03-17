@@ -6,7 +6,8 @@ import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recha
 import { useAuthStore } from '@/lib/authStore';
 import Navbar from '@/components/Navbar';
 import ApplicationsTable from '@/components/ApplicationsTable';
-import type { Application } from '@/types/application';
+import AddApplicationModal from '@/components/AddApplicationModal';
+import type { ApplicationFormData, Application } from '@/types/application';
 
 const PIE_COLORS = ['#1976d2', '#ed6c02', '#d32f2f', '#2e7d32', '#7b1fa2'];
 
@@ -29,6 +30,9 @@ export default function DashboardPage() {
   const { isLoggedIn, setLoggedIn, setEmail } = useAuthStore();
   const [applications, setApplications] = useState<Application[]>([]);
   const [loadingApps, setLoadingApps] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedApp, setSelectedApp] = useState<Application | null>(null);
+  const [submitError, setSubmitError] = useState('');
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -51,6 +55,46 @@ export default function DashboardPage() {
       .catch(() => {})
       .finally(() => setLoadingApps(false));
   }, []);
+
+  const closeModal = () => {
+    setModalOpen(false);
+    setSelectedApp(null);
+    setSubmitError('');
+  };
+
+  const handleEditApplication = async (data: ApplicationFormData) => {
+    if (!selectedApp) return;
+    setSubmitError('');
+    const res = await fetch(`/api/applications/${selectedApp._id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+
+    const result = await res.json();
+
+    if (!res.ok) {
+      const message = result.errors
+        ? Object.values(result.errors).join(', ')
+        : result.error || 'Failed to update application';
+      throw new Error(message);
+    }
+
+    setApplications((prev) =>
+      prev.map((a) => (a._id === selectedApp._id ? result.application : a))
+    );
+    closeModal();
+  };
+
+  const handleDeleteApplication = async (id: string) => {
+    const res = await fetch(`/api/applications/${id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const result = await res.json();
+      throw new Error(result.error || 'Failed to delete application');
+    }
+    setApplications((prev) => prev.filter((a) => a._id !== id));
+    closeModal();
+  };
 
   const inProgress = applications.filter((a) => a.status !== 'Applied' && a.status !== 'Rejected');
   const applied = applications.filter((a) => a.status === 'Applied');
@@ -108,7 +152,10 @@ export default function DashboardPage() {
                     cy="50%"
                     outerRadius={110}
                     dataKey="value"
-                    label={({ name, value }) => `${name}: ${value}`}
+                    label={({ name, value, percent }) =>
+                      `${name}: ${value} (${((percent || 0) * 100).toFixed(1)}%)`
+                    }
+                    labelLine={true}
                   >
                     {pieData.map((_, index) => (
                       <Cell key={index} fill={PIE_COLORS[index % PIE_COLORS.length]} />
@@ -127,9 +174,19 @@ export default function DashboardPage() {
             applications={recentApps}
             loading={loadingApps}
             emptyMessage="No applications added in the past 7 days."
+            onRowClick={(app) => { setSelectedApp(app); setModalOpen(true); }}
           />
         </Box>
       </Container>
+
+      <AddApplicationModal
+        open={modalOpen}
+        onClose={closeModal}
+        onSubmit={handleEditApplication}
+        onDelete={handleDeleteApplication}
+        serverError={submitError}
+        application={selectedApp}
+      />
     </>
   );
 }

@@ -25,9 +25,10 @@ interface Props {
   applications: Application[];
   loading: boolean;
   emptyMessage?: string;
+  onRowClick?: (app: Application) => void;
 }
 
-export default function ApplicationsTable({ title, applications, loading, emptyMessage = 'No applications here yet.' }: Props) {
+export default function ApplicationsTable({ title, applications, loading, emptyMessage = 'No applications here yet.', onRowClick }: Props) {
   const [open, setOpen] = useState(true);
 
   return (
@@ -74,7 +75,12 @@ export default function ApplicationsTable({ title, applications, loading, emptyM
                 </TableRow>
               ) : (
                 applications.map((app) => (
-                  <TableRow key={app._id} hover>
+                  <TableRow
+                    key={app._id}
+                    hover
+                    onClick={() => onRowClick?.(app)}
+                    sx={{ cursor: onRowClick ? 'pointer' : 'default' }}
+                  >
                     <TableCell>{app.company}</TableCell>
                     <TableCell>{app.position}</TableCell>
                     <TableCell>{app.location}</TableCell>

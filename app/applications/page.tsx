@@ -13,9 +13,16 @@ export default function ApplicationsPage() {
   const { isLoggedIn, setLoggedIn, setEmail } = useAuthStore();
 
   const [modalOpen, setModalOpen] = useState(false);
+  const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
   const [loadingApps, setLoadingApps] = useState(true);
   const [submitError, setSubmitError] = useState('');
+
+  const closeModal = () => {
+    setModalOpen(false);
+    setSelectedApp(null);
+    setSubmitError('');
+  };
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -62,7 +69,41 @@ export default function ApplicationsPage() {
     }
 
     setApplications((prev) => [result.application, ...prev]);
-    setModalOpen(false);
+    closeModal();
+  };
+
+  const handleEditApplication = async (data: ApplicationFormData) => {
+    if (!selectedApp) return;
+    setSubmitError('');
+    const res = await fetch(`/api/applications/${selectedApp._id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+
+    const result = await res.json();
+
+    if (!res.ok) {
+      const message = result.errors
+        ? Object.values(result.errors).join(', ')
+        : result.error || 'Failed to update application';
+      throw new Error(message);
+    }
+
+    setApplications((prev) =>
+      prev.map((a) => (a._id === selectedApp._id ? result.application : a))
+    );
+    closeModal();
+  };
+
+  const handleDeleteApplication = async (id: string) => {
+    const res = await fetch(`/api/applications/${id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const result = await res.json();
+      throw new Error(result.error || 'Failed to delete application');
+    }
+    setApplications((prev) => prev.filter((a) => a._id !== id));
+    closeModal();
   };
 
   return (
@@ -85,6 +126,7 @@ export default function ApplicationsPage() {
             applications={applications.filter((a) => a.status !== 'Applied' && a.status !== 'Rejected')}
             loading={loadingApps}
             emptyMessage="No applications currently in progress."
+            onRowClick={(app) => { setSelectedApp(app); setModalOpen(true); }}
           />
 
           <ApplicationsTable
@@ -92,6 +134,7 @@ export default function ApplicationsPage() {
             applications={applications.filter((a) => a.status === 'Applied')}
             loading={loadingApps}
             emptyMessage="No pending applications."
+            onRowClick={(app) => { setSelectedApp(app); setModalOpen(true); }}
           />
 
           <ApplicationsTable
@@ -99,15 +142,18 @@ export default function ApplicationsPage() {
             applications={applications.filter((a) => a.status === 'Rejected')}
             loading={loadingApps}
             emptyMessage="No rejected applications."
+            onRowClick={(app) => { setSelectedApp(app); setModalOpen(true); }}
           />
         </Box>
       </Container>
 
       <AddApplicationModal
         open={modalOpen}
-        onClose={() => { setModalOpen(false); setSubmitError(''); }}
-        onSubmit={handleAddApplication}
+        onClose={closeModal}
+        onSubmit={selectedApp ? handleEditApplication : handleAddApplication}
+        onDelete={handleDeleteApplication}
         serverError={submitError}
+        application={selectedApp}
       />
     </>
   );
