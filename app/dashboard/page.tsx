@@ -1,34 +1,35 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import {
-  Container,
-  Box,
-  Typography,
-  Button,
-  AppBar,
-  Toolbar,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
+import { Container, Box, Typography, Card, CardContent, Grid } from '@mui/material';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useAuthStore } from '@/lib/authStore';
-import AddApplicationModal from '@/components/AddApplicationModal';
-import type { ApplicationFormData, Application } from '@/types/application';
+import Navbar from '@/components/Navbar';
+import ApplicationsTable from '@/components/ApplicationsTable';
+import type { Application } from '@/types/application';
 
-const columns = ['Company', 'Position', 'Location', 'Status', 'Date Applied', 'Employment Type', 'Work Mode', 'Notes'];
+const PIE_COLORS = ['#1976d2', '#ed6c02', '#d32f2f', '#2e7d32', '#7b1fa2'];
+
+function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <Card variant="outlined" sx={{ height: '100%' }}>
+      <CardContent>
+        <Typography variant="body2" color="text.secondary" gutterBottom>
+          {label}
+        </Typography>
+        <Typography variant="h3" fontWeight="bold" sx={{ color }}>
+          {value}
+        </Typography>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function DashboardPage() {
-  const router = useRouter();
-  const { email, logout, isLoggedIn, setLoggedIn, setEmail } = useAuthStore();
+  const { isLoggedIn, setLoggedIn, setEmail } = useAuthStore();
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [loadingApps, setLoadingApps] = useState(true);
 
-  // Rehydrate Zustand store on page load/refresh from the cookie-validated session
   useEffect(() => {
     if (!isLoggedIn) {
       fetch('/api/me')
@@ -41,138 +42,94 @@ export default function DashboardPage() {
         })
         .catch(() => {});
     }
-    fetchApplications();
+
+    fetch('/api/applications')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.applications) setApplications(data.applications);
+      })
+      .catch(() => {})
+      .finally(() => setLoadingApps(false));
   }, []);
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [applications, setApplications] = useState<Application[]>([]);
-  const [loadingApps, setLoadingApps] = useState(true);
-  const [submitError, setSubmitError] = useState('');
+  const inProgress = applications.filter((a) => a.status !== 'Applied' && a.status !== 'Rejected');
+  const applied = applications.filter((a) => a.status === 'Applied');
+  const rejected = applications.filter((a) => a.status === 'Rejected');
 
-  const fetchApplications = async () => {
-    try {
-      const res = await fetch('/api/applications');
-      const data = await res.json();
-      if (res.ok) setApplications(data.applications);
-    } catch {
-      // silently fail — table will remain empty
-    } finally {
-      setLoadingApps(false);
-    }
-  };
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const recentApps = applications.filter(
+    (a) => new Date(a.createdAt) >= sevenDaysAgo
+  );
 
-  const handleLogout = async () => {
-    await fetch('/api/logout', { method: 'POST' });
-    logout();
-    router.push('/login');
-  };
-
-  const handleAddApplication = async (data: ApplicationFormData) => {
-    setSubmitError('');
-    const res = await fetch('/api/applications', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-
-    const result = await res.json();
-
-    if (!res.ok) {
-      const message =
-        result.errors
-          ? Object.values(result.errors).join(', ')
-          : result.error || 'Failed to save application';
-      throw new Error(message);
-    }
-
-    setApplications((prev) => [result.application, ...prev]);
-    setModalOpen(false);
-  };
+  const pieData = [
+    { name: 'In Progress', value: inProgress.length },
+    { name: 'Applied', value: applied.length },
+    { name: 'Rejected', value: rejected.length },
+  ].filter((d) => d.value > 0);
 
   return (
     <>
-      <AppBar position="static">
-        <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            Job Application Tracker
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="body2">{email}</Typography>
-            <Button color="inherit" onClick={handleLogout}>
-              Logout
-            </Button>
-          </Box>
-        </Toolbar>
-      </AppBar>
+      <Navbar />
 
       <Container maxWidth="lg">
         <Box sx={{ py: 4 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Typography variant="h5" fontWeight="bold">
-              My Applications
-            </Typography>
-            <Button variant="contained" startIcon={<AddIcon />} onClick={() => setModalOpen(true)}>
-              Add Application
-            </Button>
-          </Box>
+          <Typography variant="h5" fontWeight="bold" mb={3}>
+            Dashboard
+          </Typography>
 
-          <TableContainer component={Paper} elevation={2}>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ backgroundColor: 'primary.main' }}>
-                  {columns.map((col) => (
-                    <TableCell
-                      key={col}
-                      sx={{ color: 'white', fontWeight: 'bold' }}
-                    >
-                      {col}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {loadingApps ? (
-                  <TableRow>
-                    <TableCell colSpan={columns.length} align="center" sx={{ py: 8 }}>
-                      <Typography variant="body2" color="text.secondary">Loading...</Typography>
-                    </TableCell>
-                  </TableRow>
-                ) : applications.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={columns.length} align="center" sx={{ py: 8, color: 'text.secondary' }}>
-                      <Typography variant="body1" sx={{ mb: 1 }}>No applications yet</Typography>
-                      <Typography variant="body2">
-                        Click &quot;Add Application&quot; to track your first job application
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  applications.map((app) => (
-                    <TableRow key={app._id} hover>
-                      <TableCell>{app.company}</TableCell>
-                      <TableCell>{app.position}</TableCell>
-                      <TableCell>{app.location}</TableCell>
-                      <TableCell>{app.status}</TableCell>
-                      <TableCell>{new Date(app.dateApplied).toLocaleDateString()}</TableCell>
-                      <TableCell>{app.employmentType}</TableCell>
-                      <TableCell>{app.workMode}</TableCell>
-                      <TableCell sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {app.notes || '—'}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          {/* Stats Cards */}
+          <Grid container spacing={2} mb={4}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+              <StatCard label="Total Applications" value={applications.length} color="text.primary" />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+              <StatCard label="In Progress" value={inProgress.length} color="#1976d2" />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+              <StatCard label="Applied" value={applied.length} color="#ed6c02" />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+              <StatCard label="Rejected" value={rejected.length} color="#d32f2f" />
+            </Grid>
+          </Grid>
+
+          {/* Pie Chart */}
+          {pieData.length > 0 && (
+            <Card variant="outlined" sx={{ mb: 4, p: 2 }}>
+              <Typography variant="h6" fontWeight="medium" mb={1}>
+                Status Breakdown
+              </Typography>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={110}
+                    dataKey="value"
+                    label={({ name, value }) => `${name}: ${value}`}
+                  >
+                    {pieData.map((_, index) => (
+                      <Cell key={index} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </Card>
+          )}
+
+          {/* Recent 7 Days */}
+          <ApplicationsTable
+            title="Added in the Past 7 Days"
+            applications={recentApps}
+            loading={loadingApps}
+            emptyMessage="No applications added in the past 7 days."
+          />
         </Box>
       </Container>
-      <AddApplicationModal
-        open={modalOpen}
-        onClose={() => { setModalOpen(false); setSubmitError(''); }}
-        onSubmit={handleAddApplication}
-        serverError={submitError}
-      />
     </>
   );
 }

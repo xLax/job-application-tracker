@@ -1,0 +1,97 @@
+'use client';
+
+import { useState } from 'react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Typography,
+  Box,
+  Collapse,
+  IconButton,
+} from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import type { Application } from '@/types/application';
+
+const COLUMNS = ['Company', 'Position', 'Location', 'Status', 'Date Applied', 'Employment Type', 'Work Mode', 'Notes'];
+
+interface Props {
+  title: string;
+  applications: Application[];
+  loading: boolean;
+  emptyMessage?: string;
+}
+
+export default function ApplicationsTable({ title, applications, loading, emptyMessage = 'No applications here yet.' }: Props) {
+  const [open, setOpen] = useState(true);
+
+  return (
+    <Box sx={{ mb: 5 }}>
+      <Box
+        sx={{ display: 'flex', alignItems: 'center', mb: 1.5, cursor: 'pointer', userSelect: 'none', width: 'fit-content' }}
+        onClick={() => setOpen((prev) => !prev)}
+      >
+        <IconButton size="small" sx={{ mr: 0.5, p: 0 }}>
+          {open ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+        </IconButton>
+        <Typography variant="h6" fontWeight="bold">
+          {title}
+          <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+            ({loading ? '…' : applications.length})
+          </Typography>
+        </Typography>
+      </Box>
+
+      <Collapse in={open} unmountOnExit>
+        <TableContainer component={Paper} elevation={2}>
+          <Table>
+            <TableHead>
+              <TableRow sx={{ backgroundColor: 'primary.main' }}>
+                {COLUMNS.map((col) => (
+                  <TableCell key={col} sx={{ color: 'white', fontWeight: 'bold' }}>
+                    {col}
+                  </TableCell>
+                ))}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={COLUMNS.length} align="center" sx={{ py: 6 }}>
+                    <Typography variant="body2" color="text.secondary">Loading...</Typography>
+                  </TableCell>
+                </TableRow>
+              ) : applications.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={COLUMNS.length} align="center" sx={{ py: 6, color: 'text.secondary' }}>
+                    <Typography variant="body2">{emptyMessage}</Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                applications.map((app) => (
+                  <TableRow key={app._id} hover>
+                    <TableCell>{app.company}</TableCell>
+                    <TableCell>{app.position}</TableCell>
+                    <TableCell>{app.location}</TableCell>
+                    <TableCell>{app.status}</TableCell>
+                    <TableCell>{new Date(app.dateApplied).toLocaleDateString()}</TableCell>
+                    <TableCell>{app.employmentType}</TableCell>
+                    <TableCell>{app.workMode}</TableCell>
+                    <TableCell sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {app.notes || '—'}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Collapse>
+    </Box>
+  );
+}

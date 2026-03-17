@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 
-const protectedRoutes = ['/dashboard'];
+const protectedRoutes = ['/dashboard', '/applications'];
 const authRoutes = ['/login', '/register'];
 
 export async function middleware(request: NextRequest) {
@@ -37,5 +37,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/login', '/register'],
+  matcher: ['/dashboard/:path*', '/applications/:path*', '/login', '/register'],
 };
