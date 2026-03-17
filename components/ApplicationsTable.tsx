@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Table,
   TableBody,
@@ -13,6 +13,7 @@ import {
   Box,
   Collapse,
   IconButton,
+  TablePagination,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -26,10 +27,22 @@ interface Props {
   loading: boolean;
   emptyMessage?: string;
   onRowClick?: (app: Application) => void;
+  rowsPerPage?: number;
 }
 
-export default function ApplicationsTable({ title, applications, loading, emptyMessage = 'No applications here yet.', onRowClick }: Props) {
+export default function ApplicationsTable({ title, applications, loading, emptyMessage = 'No applications here yet.', onRowClick, rowsPerPage = 5 }: Props) {
   const [open, setOpen] = useState(true);
+  const [page, setPage] = useState(0);
+
+  // Reset to first page whenever the data set changes (e.g. after add/delete/filter)
+  useEffect(() => {
+    setPage(0);
+  }, [applications.length]);
+
+  const needsPagination = !loading && applications.length > rowsPerPage;
+  const visibleRows = needsPagination
+    ? applications.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+    : applications;
 
   return (
     <Box sx={{ mb: 5 }}>
@@ -69,12 +82,12 @@ export default function ApplicationsTable({ title, applications, loading, emptyM
                 </TableRow>
               ) : applications.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={COLUMNS.length} align="center" sx={{ py: 6, color: 'text.secondary' }}>
+                  <TableCell colSpan={COLUMNS.length} align="center" sx={{ py: 1, color: 'text.secondary' }}>
                     <Typography variant="body2">{emptyMessage}</Typography>
                   </TableCell>
                 </TableRow>
               ) : (
-                applications.map((app) => (
+                visibleRows.map((app) => (
                   <TableRow
                     key={app._id}
                     hover
@@ -97,7 +110,19 @@ export default function ApplicationsTable({ title, applications, loading, emptyM
             </TableBody>
           </Table>
         </TableContainer>
+        {needsPagination && (
+          <TablePagination
+            component="div"
+            count={applications.length}
+            page={page}
+            rowsPerPage={rowsPerPage}
+            rowsPerPageOptions={[]}
+            onPageChange={(_, newPage) => setPage(newPage)}
+            sx={{ display: 'flex', justifyContent: 'flex-end' }}
+          />
+        )}
       </Collapse>
     </Box>
   );
 }
+

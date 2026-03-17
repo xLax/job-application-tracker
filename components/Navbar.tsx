@@ -28,7 +28,7 @@ export default function Navbar() {
   ];
 
   return (
-    <AppBar position="static">
+    <AppBar position="sticky" sx={{ top: 0, zIndex: (theme) => theme.zIndex.appBar }}>
       <Toolbar>
         <Typography variant="h6" sx={{ mr: 4 }}>
           Job Application Tracker

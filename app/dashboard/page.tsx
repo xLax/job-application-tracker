@@ -175,6 +175,7 @@ export default function DashboardPage() {
             loading={loadingApps}
             emptyMessage="No applications added in the past 7 days."
             onRowClick={(app) => { setSelectedApp(app); setModalOpen(true); }}
+            rowsPerPage={10}
           />
         </Box>
       </Container>
