@@ -25,6 +25,7 @@ export default function Navbar() {
   const navLinks = [
     { label: 'Dashboard', href: '/dashboard' },
     { label: 'Applications', href: '/applications' },
+    { label: 'Pipeline', href: '/pipeline' },
   ];
 
   return (
