@@ -8,7 +8,7 @@ export default async function Home() {
 
   if (token) {
     try {
-      jwt.verify(token, process.env.JWT_SECRET || 'secret');
+      jwt.verify(token, process.env.JWT_SECRET!);
       redirect('/dashboard');
     } catch {
       // Token is invalid or expired — fall through to login

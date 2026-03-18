@@ -8,7 +8,7 @@ async function getUserId(request: NextRequest): Promise<string | null> {
   const token = request.cookies.get('token')?.value;
   if (!token) return null;
   try {
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'secret');
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
     const { payload } = await jwtVerify(token, secret);
     return payload.userId as string;
   } catch {
