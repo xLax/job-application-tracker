@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Container, Box, Typography, Button } from '@mui/material';
+import { Container, Box, Typography, Button, TextField, InputAdornment, IconButton } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import ClearIcon from '@mui/icons-material/Clear';
 import { useAuthStore } from '@/lib/authStore';
 import Navbar from '@/components/Navbar';
 import AddApplicationModal from '@/components/AddApplicationModal';
@@ -17,6 +18,17 @@ export default function ApplicationsPage() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loadingApps, setLoadingApps] = useState(true);
   const [submitError, setSubmitError] = useState('');
+  const [search, setSearch] = useState('');
+
+  const term = search.trim().toLowerCase();
+  const filtered = term
+    ? applications.filter(
+        (a) =>
+          a.company.toLowerCase().includes(term) ||
+          a.position.toLowerCase().includes(term) ||
+          (a.notes ?? '').toLowerCase().includes(term)
+      )
+    : applications;
 
   const closeModal = () => {
     setModalOpen(false);
@@ -116,22 +128,43 @@ export default function ApplicationsPage() {
             <Typography variant="h5" fontWeight="bold">
               My Applications
             </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <TextField
+                size="small"
+                placeholder="Search by company, position or notes…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                sx={{ width: 320 }}
+                slotProps={{
+                  input: {
+                    endAdornment: search ? (
+                      <InputAdornment position="end">
+                        <IconButton size="small" onClick={() => setSearch('')} edge="end">
+                          <ClearIcon fontSize="small" />
+                        </IconButton>
+                      </InputAdornment>
+                    ) : null,
+                  },
+                }}
+              />
             <Button variant="contained" startIcon={<AddIcon />} onClick={() => setModalOpen(true)}>
               Add Application
             </Button>
+            </Box>
           </Box>
 
           <ApplicationsTable
             title="Applications in Progress"
-            applications={applications.filter((a) => a.status !== 'Applied' && a.status !== 'Rejected')}
+            applications={filtered.filter((a) => a.status !== 'Applied' && a.status !== 'Rejected')}
             loading={loadingApps}
             emptyMessage="No applications currently in progress."
             onRowClick={(app) => { setSelectedApp(app); setModalOpen(true); }}
+            statusFilter
           />
 
           <ApplicationsTable
             title="Applied Applications"
-            applications={applications.filter((a) => a.status === 'Applied')}
+            applications={filtered.filter((a) => a.status === 'Applied')}
             loading={loadingApps}
             emptyMessage="No pending applications."
             onRowClick={(app) => { setSelectedApp(app); setModalOpen(true); }}
@@ -139,7 +172,7 @@ export default function ApplicationsPage() {
 
           <ApplicationsTable
             title="Rejected Applications"
-            applications={applications.filter((a) => a.status === 'Rejected')}
+            applications={filtered.filter((a) => a.status === 'Rejected')}
             loading={loadingApps}
             emptyMessage="No rejected applications."
             onRowClick={(app) => { setSelectedApp(app); setModalOpen(true); }}
