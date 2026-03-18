@@ -1,12 +1,16 @@
-export const APPLICATION_STATUSES = [
+export const STAGES = [
   'Applied',
-  'Phone Interview',
   'Interview',
-  'Code Interview',
-  'HR Interview',
   'Offer',
   'Rejected',
   'Withdrawn',
+] as const;
+
+export const INTERVIEW_TYPES = [
+  'Phone',
+  'Code',
+  'HR',
+  'Other',
 ] as const;
 
 export const EMPLOYMENT_TYPES = [
@@ -22,6 +26,7 @@ export const WORK_MODES = [
   'Remote',
 ] as const;
 
-export type ApplicationStatus = typeof APPLICATION_STATUSES[number];
+export type Stage = typeof STAGES[number];
+export type InterviewType = typeof INTERVIEW_TYPES[number];
 export type EmploymentType = typeof EMPLOYMENT_TYPES[number];
 export type WorkMode = typeof WORK_MODES[number];

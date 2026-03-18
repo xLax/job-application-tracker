@@ -23,7 +23,7 @@ import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import type { Application } from '@/types/application';
-import { APPLICATION_STATUSES } from '@/lib/constants';
+import { STAGES } from '@/lib/constants';
 
 type SortField = 'company' | 'dateApplied';
 type SortDir = 'asc' | 'desc';
@@ -42,7 +42,7 @@ function SortIcon({ field, sortField, sortDir }: { field: SortField; sortField: 
     : <ArrowDownwardIcon fontSize="small" sx={{ verticalAlign: 'middle', ml: 0.5 }} />;
 }
 
-const COLUMNS = ['Company', 'Position', 'Location', 'Status', 'Date Applied', 'Employment Type', 'Work Mode', 'Notes'];
+const COLUMNS = ['Company', 'Position', 'Location', 'Stage', 'Date Applied', 'Employment Type', 'Work Mode', 'Notes'];
 
 interface Props {
   title: string;
@@ -76,8 +76,8 @@ export default function ApplicationsTable({ title, applications, loading, emptyM
   };
 
   // Statuses that actually exist in the current data set
-  const presentStatuses = APPLICATION_STATUSES.filter((s) =>
-    applications.some((a) => a.status === s)
+  const presentStages = STAGES.filter((s) =>
+    applications.some((a) => a.stage === s)
   );
 
   // Reset page and clear status filter when the data set changes
@@ -87,7 +87,7 @@ export default function ApplicationsTable({ title, applications, loading, emptyM
   }, [applications.length]);
 
   const statusFiltered = activeStatus
-    ? applications.filter((a) => a.status === activeStatus)
+    ? applications.filter((a) => a.stage === activeStatus)
     : applications;
 
   const sorted = sortField
@@ -122,7 +122,7 @@ export default function ApplicationsTable({ title, applications, loading, emptyM
         </Typography>
       </Box>
 
-      {statusFilter && !loading && presentStatuses.length > 0 && (
+      {statusFilter && !loading && presentStages.length > 0 && (
         <Stack direction="row" spacing={1} sx={{ mb: 1.5, flexWrap: 'wrap', gap: 1 }}>
           <Chip
             label="All"
@@ -131,7 +131,7 @@ export default function ApplicationsTable({ title, applications, loading, emptyM
             color={activeStatus === null ? 'primary' : 'default'}
             variant={activeStatus === null ? 'filled' : 'outlined'}
           />
-          {presentStatuses.map((s) => (
+          {presentStages.map((s) => (
             <Chip
               key={s}
               label={s}
@@ -194,7 +194,7 @@ export default function ApplicationsTable({ title, applications, loading, emptyM
                     <TableCell>{app.company}</TableCell>
                     <TableCell>{app.position}</TableCell>
                     <TableCell>{app.location}</TableCell>
-                    <TableCell>{app.status}</TableCell>
+                    <TableCell>{app.stage === 'Interview' && app.interviewType ? `Interview (${app.interviewType})` : app.stage}</TableCell>
                     <TableCell>{new Date(app.dateApplied).toLocaleDateString('en-GB')}</TableCell>
                     <TableCell>{app.employmentType}</TableCell>
                     <TableCell>{app.workMode}</TableCell>

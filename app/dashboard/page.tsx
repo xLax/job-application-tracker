@@ -9,7 +9,7 @@ import ApplicationsTable from '@/components/ApplicationsTable';
 import AddApplicationModal from '@/components/AddApplicationModal';
 import type { ApplicationFormData, Application } from '@/types/application';
 
-const PIE_COLORS = ['#1976d2', '#ed6c02', '#d32f2f', '#2e7d32', '#7b1fa2'];
+const PIE_COLORS = ['#1976d2', '#ed6c02', '#2e7d32', '#d32f2f', '#7b1fa2'];
 
 function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
   return (
@@ -96,9 +96,10 @@ export default function DashboardPage() {
     closeModal();
   };
 
-  const inProgress = applications.filter((a) => a.status !== 'Applied' && a.status !== 'Rejected');
-  const applied = applications.filter((a) => a.status === 'Applied');
-  const rejected = applications.filter((a) => a.status === 'Rejected');
+  const inProgress = applications.filter((a) => a.stage === 'Interview');
+  const applied = applications.filter((a) => a.stage === 'Applied');
+  const rejected = applications.filter((a) => a.stage === 'Rejected');
+  const offers = applications.filter((a) => a.stage === 'Offer');
 
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -109,6 +110,7 @@ export default function DashboardPage() {
   const pieData = [
     { name: 'In Progress', value: inProgress.length },
     { name: 'Applied', value: applied.length },
+    { name: 'Offers', value: offers.length },
     { name: 'Rejected', value: rejected.length },
   ].filter((d) => d.value > 0);
 
@@ -124,16 +126,19 @@ export default function DashboardPage() {
 
           {/* Stats Cards */}
           <Grid container spacing={2} mb={4}>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
               <StatCard label="Total Applications" value={applications.length} color="text.primary" />
             </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <StatCard label="In Progress" value={inProgress.length} color="#1976d2" />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
               <StatCard label="Applied" value={applied.length} color="#ed6c02" />
             </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+              <StatCard label="In Progress" value={inProgress.length} color="#1976d2" />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+              <StatCard label="Offers" value={offers.length} color="#2e7d32" />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
               <StatCard label="Rejected" value={rejected.length} color="#d32f2f" />
             </Grid>
           </Grid>

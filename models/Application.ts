@@ -1,12 +1,13 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
-import { APPLICATION_STATUSES, EMPLOYMENT_TYPES, WORK_MODES } from '@/lib/constants';
+import { STAGES, INTERVIEW_TYPES, EMPLOYMENT_TYPES, WORK_MODES } from '@/lib/constants';
 
 export interface IApplication extends Document {
   userId: Types.ObjectId;
   company: string;
   position: string;
   location: string;
-  status: string;
+  stage: string;
+  interviewType?: string;
   dateApplied: Date;
   employmentType: string;
   workMode: string;
@@ -15,7 +16,8 @@ export interface IApplication extends Document {
   updatedAt: Date;
 }
 
-const VALID_STATUSES = APPLICATION_STATUSES;
+const VALID_STAGES = STAGES;
+const VALID_INTERVIEW_TYPES = INTERVIEW_TYPES;
 const VALID_EMPLOYMENT_TYPES = EMPLOYMENT_TYPES;
 const VALID_WORK_MODES = WORK_MODES;
 
@@ -47,11 +49,16 @@ const ApplicationSchema = new Schema<IApplication>(
       trim: true,
       maxlength: [100, 'Location must be at most 100 characters'],
     },
-    status: {
+    stage: {
       type: String,
-      required: [true, 'Status is required'],
-      enum: { values: VALID_STATUSES, message: 'Invalid status value' },
+      required: [true, 'Stage is required'],
+      enum: { values: VALID_STAGES, message: 'Invalid stage value' },
       default: 'Applied',
+    },
+    interviewType: {
+      type: String,
+      trim: true,
+      default: '',
     },
     dateApplied: {
       type: Date,

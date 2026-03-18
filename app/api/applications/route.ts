@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 import { connectToDatabase } from '@/lib/db';
 import { Application } from '@/models/Application';
-import { APPLICATION_STATUSES, EMPLOYMENT_TYPES, WORK_MODES } from '@/lib/constants';
+import { STAGES, INTERVIEW_TYPES, EMPLOYMENT_TYPES, WORK_MODES } from '@/lib/constants';
 
 async function getUserId(request: NextRequest): Promise<string | null> {
   const token = request.cookies.get('token')?.value;
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { company, position, location, status, dateApplied, employmentType, workMode, notes } = body;
+    const { company, position, location, stage, interviewType, dateApplied, employmentType, workMode, notes } = body;
 
     // Server-side validation
     const errors: Record<string, string> = {};
@@ -65,8 +65,12 @@ export async function POST(request: NextRequest) {
       errors.location = 'Location must be at most 100 characters';
     }
 
-    if (!status || !APPLICATION_STATUSES.includes(status)) {
-      errors.status = 'Invalid status value';
+    if (!stage || !STAGES.includes(stage)) {
+      errors.stage = 'Invalid stage value';
+    }
+
+    if (interviewType && !INTERVIEW_TYPES.includes(interviewType)) {
+      errors.interviewType = 'Invalid interview type';
     }
 
     if (!dateApplied || isNaN(new Date(dateApplied).getTime())) {
@@ -96,7 +100,8 @@ export async function POST(request: NextRequest) {
       company: company.trim(),
       position: position.trim(),
       location: location.trim(),
-      status,
+      stage,
+      interviewType: stage === 'Interview' ? interviewType : '',
       dateApplied: new Date(dateApplied),
       employmentType,
       workMode,

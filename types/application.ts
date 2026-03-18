@@ -4,7 +4,8 @@ export interface ApplicationFormData {
   company: string;
   position: string;
   location: string;
-  status: string;
+  stage: string;
+  interviewType: string;
   dateApplied: string;
   employmentType: string;
   workMode: string;
@@ -17,7 +18,8 @@ export interface Application {
   company: string;
   position: string;
   location: string;
-  status: string;
+  stage: string;
+  interviewType?: string;
   dateApplied: string;
   employmentType: string;
   workMode: string;

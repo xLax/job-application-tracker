@@ -155,7 +155,7 @@ export default function ApplicationsPage() {
 
           <ApplicationsTable
             title="Applications in Progress"
-            applications={filtered.filter((a) => a.status !== 'Applied' && a.status !== 'Rejected')}
+            applications={filtered.filter((a) => a.stage !== 'Applied' && a.stage !== 'Rejected')}
             loading={loadingApps}
             emptyMessage="No applications currently in progress."
             onRowClick={(app) => { setSelectedApp(app); setModalOpen(true); }}
@@ -164,7 +164,7 @@ export default function ApplicationsPage() {
 
           <ApplicationsTable
             title="Applied Applications"
-            applications={filtered.filter((a) => a.status === 'Applied')}
+            applications={filtered.filter((a) => a.stage === 'Applied')}
             loading={loadingApps}
             emptyMessage="No pending applications."
             onRowClick={(app) => { setSelectedApp(app); setModalOpen(true); }}
@@ -172,7 +172,7 @@ export default function ApplicationsPage() {
 
           <ApplicationsTable
             title="Rejected Applications"
-            applications={filtered.filter((a) => a.status === 'Rejected')}
+            applications={filtered.filter((a) => a.stage === 'Rejected')}
             loading={loadingApps}
             emptyMessage="No rejected applications."
             onRowClick={(app) => { setSelectedApp(app); setModalOpen(true); }}

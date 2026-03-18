@@ -11,6 +11,7 @@ import {
   TextField,
   MenuItem,
   Grid,
+  Box,
   CircularProgress,
   Alert,
   FormControl,
@@ -22,7 +23,7 @@ import {
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import type { ApplicationFormData, Application } from '@/types/application';
-import { APPLICATION_STATUSES, EMPLOYMENT_TYPES, WORK_MODES } from '@/lib/constants';
+import { STAGES, INTERVIEW_TYPES, EMPLOYMENT_TYPES, WORK_MODES } from '@/lib/constants';
 
 export type { ApplicationFormData };
 
@@ -41,13 +42,16 @@ export default function AddApplicationModal({ open, onClose, onSubmit, onDelete,
     handleSubmit,
     control,
     reset,
+    watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<ApplicationFormData>({
     defaultValues: {
       company: '',
       position: '',
       location: '',
-      status: 'Applied',
+      stage: 'Applied',
+      interviewType: '',
       dateApplied: new Date().toISOString().split('T')[0],
       employmentType: 'Full Time',
       workMode: 'Not Specified',
@@ -56,6 +60,7 @@ export default function AddApplicationModal({ open, onClose, onSubmit, onDelete,
   });
 
   const [isDeleting, setIsDeleting] = useState(false);
+  const watchedStage = watch('stage');
 
   // Prefill the form when opening in edit mode, clear it when opening in add mode
   useEffect(() => {
@@ -65,7 +70,8 @@ export default function AddApplicationModal({ open, onClose, onSubmit, onDelete,
         company: application.company,
         position: application.position,
         location: application.location,
-        status: application.status,
+        stage: application.stage,
+        interviewType: application.interviewType || '',
         dateApplied: new Date(application.dateApplied).toISOString().split('T')[0],
         employmentType: application.employmentType,
         workMode: application.workMode,
@@ -76,7 +82,8 @@ export default function AddApplicationModal({ open, onClose, onSubmit, onDelete,
         company: '',
         position: '',
         location: '',
-        status: 'Applied',
+        stage: 'Applied',
+        interviewType: '',
         dateApplied: new Date().toISOString().split('T')[0],
         employmentType: 'Full Time',
         workMode: 'Not Specified',
@@ -178,24 +185,53 @@ export default function AddApplicationModal({ open, onClose, onSubmit, onDelete,
               />
             </Grid>
 
-            {/* Status */}
+            {/* Stage + optional Interview Type stacked in the same column */}
             <Grid size={{ xs: 12, sm: 4 }}>
               <Controller
-                name="status"
+                name="stage"
                 control={control}
-                rules={{ required: 'Status is required' }}
+                rules={{ required: 'Stage is required' }}
                 render={({ field }) => (
-                  <FormControl fullWidth error={!!errors.status}>
-                    <InputLabel id="status-label">Status *</InputLabel>
-                    <Select {...field} labelId="status-label" label="Status *">
-                      {APPLICATION_STATUSES.map((opt) => (
+                  <FormControl fullWidth error={!!errors.stage}>
+                    <InputLabel id="stage-label">Stage *</InputLabel>
+                    <Select
+                      {...field}
+                      labelId="stage-label"
+                      label="Stage *"
+                      onChange={(e) => {
+                        field.onChange(e);
+                        if (e.target.value !== 'Interview') setValue('interviewType', '');
+                      }}
+                    >
+                      {STAGES.map((opt) => (
                         <MenuItem key={opt} value={opt}>{opt}</MenuItem>
                       ))}
                     </Select>
-                    <FormHelperText>{errors.status?.message}</FormHelperText>
+                    <FormHelperText>{errors.stage?.message}</FormHelperText>
                   </FormControl>
                 )}
               />
+              {/* Interview Type — appears below Stage when Interview is selected */}
+              {watchedStage === 'Interview' && (
+                <Box sx={{ mt: 2 }}>
+                  <Controller
+                    name="interviewType"
+                    control={control}
+                    render={({ field }) => (
+                      <FormControl fullWidth error={!!errors.interviewType}>
+                        <InputLabel id="interview-type-label">Interview Type</InputLabel>
+                        <Select {...field} labelId="interview-type-label" label="Interview Type">
+                          <MenuItem value=""><em>None</em></MenuItem>
+                          {INTERVIEW_TYPES.map((opt) => (
+                            <MenuItem key={opt} value={opt}>{opt}</MenuItem>
+                          ))}
+                        </Select>
+                        <FormHelperText>{errors.interviewType?.message}</FormHelperText>
+                      </FormControl>
+                    )}
+                  />
+                </Box>
+              )}
             </Grid>
 
             {/* Employment Type */}

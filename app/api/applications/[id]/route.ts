@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 import { connectToDatabase } from '@/lib/db';
 import { Application } from '@/models/Application';
-import { APPLICATION_STATUSES, EMPLOYMENT_TYPES, WORK_MODES } from '@/lib/constants';
+import { STAGES, INTERVIEW_TYPES, EMPLOYMENT_TYPES, WORK_MODES } from '@/lib/constants';
 
 async function getUserId(request: NextRequest): Promise<string | null> {
   const token = request.cookies.get('token')?.value;
@@ -18,7 +18,7 @@ async function getUserId(request: NextRequest): Promise<string | null> {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function validateBody(body: Record<string, any>) {
-  const { company, position, location, status, dateApplied, employmentType, workMode, notes } = body;
+  const { company, position, location, stage, interviewType, dateApplied, employmentType, workMode, notes } = body;
   const errors: Record<string, string> = {};
 
   if (!company || typeof company !== 'string' || company.trim().length < 2) {
@@ -39,8 +39,12 @@ function validateBody(body: Record<string, any>) {
     errors.location = 'Location must be at most 100 characters';
   }
 
-  if (!status || !APPLICATION_STATUSES.includes(status)) {
-    errors.status = 'Invalid status value';
+  if (!stage || !STAGES.includes(stage)) {
+    errors.stage = 'Invalid stage value';
+  }
+
+  if (interviewType && !INTERVIEW_TYPES.includes(interviewType)) {
+    errors.interviewType = 'Invalid interview type';
   }
 
   if (!dateApplied || isNaN(new Date(dateApplied as string).getTime())) {
@@ -82,7 +86,7 @@ export async function PUT(
       return NextResponse.json({ errors }, { status: 422 });
     }
 
-    const { company, position, location, status, dateApplied, employmentType, workMode, notes } = body;
+    const { company, position, location, stage, interviewType, dateApplied, employmentType, workMode, notes } = body;
 
     await connectToDatabase();
 
@@ -92,7 +96,8 @@ export async function PUT(
         company: (company as string).trim(),
         position: (position as string).trim(),
         location: (location as string).trim(),
-        status,
+        stage,
+        interviewType: stage === 'Interview' ? interviewType : '',
         dateApplied: new Date(dateApplied as string),
         employmentType,
         workMode,
